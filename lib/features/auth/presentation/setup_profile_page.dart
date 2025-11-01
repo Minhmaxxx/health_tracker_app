@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/primary_button.dart';
-import '../../home/screens/home_screen.dart';
+
 
 class SetupProfilePage extends StatefulWidget {
   const SetupProfilePage({super.key});

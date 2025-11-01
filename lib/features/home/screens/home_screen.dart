@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../auth/presentation/setup_profile_page.dart';
+import '../../../measure/add_measurement_sheet.dart';
+import '../../../measure/weekly_weight_chart.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +16,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String _range = '7 Ngày';
   final _ranges = const ['7 Ngày', '14 Ngày', '30 Ngày'];
   final String displayName = '';
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> _latestStream() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    return FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,38 +134,94 @@ class _HomeScreenState extends State<HomeScreen> {
                   end: Alignment.bottomRight,
                 ),
                 padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('CHỈ SỐ BMI CỦA BẠN',
-                        style: TextStyle(
-                          color: Colors.white,
-                          letterSpacing: 1.1,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        )),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Nhập chiều cao & cân nặng để tính BMI',
-                      style: TextStyle(color: Colors.white, fontSize: 15),
-                    ),
-                    const SizedBox(height: 14),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF5A68FF),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  stream: _latestStream(),
+                  builder: (context, snap) {
+                    final latest =
+                        snap.data?.data()?['latest'] as Map<String, dynamic>?;
+                    final hasData = latest != null && latest['bmi'] != null;
+
+                    if (!hasData) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('CHỈ SỐ BMI CỦA BẠN',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 14),
+                          const Text('Nhập chiều cao & cân nặng để tính BMI',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 15)),
+                          const SizedBox(height: 14),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Color(0xFF5A68FF)),
+                            onPressed: () => showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.white,
+                              shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(22))),
+                              builder: (_) => const AddMeasurementSheet(),
+                            ),
+                            child: const Text('Bắt Đầu'),
+                          ),
+                        ],
+                      );
+                    }
+
+                    final bmi = (latest['bmi'] as num).toDouble();
+                    final w = (latest['weight'] as num).toDouble();
+                    final h = (latest['height'] as num).toDouble();
+                    final cat = (latest['category'] as String?) ?? '';
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CHỈ SỐ BMI CỦA BẠN',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 10),
+                              Text('$bmi • $cat',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 4),
+                              Text(
+                                  'Cân nặng: ${w.toStringAsFixed(1)} kg • Chiều cao: ${h.toStringAsFixed(0)} cm',
+                                  style: const TextStyle(color: Colors.white)),
+                            ],
+                          ),
                         ),
-                      ),
-                      onPressed: () {
-                        // TODO: Navigator.pushNamed(context, '/bmi_calculator');
-                      },
-                      child: const Text('Bắt Đầu'),
-                    ),
-                  ],
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Color(0xFF5A68FF)),
+                          onPressed: () => showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(22))),
+                            builder: (_) => const AddMeasurementSheet(),
+                          ),
+                          child: const Text('Cập nhật'),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
 
@@ -172,10 +235,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   items: _ranges,
                   onChanged: (v) => setState(() => _range = v),
                 ),
-                child: _EmptyChart(
-                  onAddWeight: () {
-                    // TODO: Navigator.pushNamed(context, '/weight_add');
-                  },
+                child: WeeklyWeightChart(
+                  days:
+                      _range == '7 Ngày' ? 7 : (_range == '14 Ngày' ? 14 : 30),
                 ),
               ),
 
@@ -198,9 +260,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.monitor_weight_rounded,
                     label: 'CÂN NẶNG',
                     subtitle: 'Cập nhật hôm nay',
-                    onTap: () {
-                      // TODO: Navigator.pushNamed(context, '/weight_add');
-                    },
+                    onTap: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(22))),
+                      builder: (_) => const AddMeasurementSheet(),
+                    ),
                   ),
                   _QuickAction(
                     colors: const [Color(0xFFFF5A8A), Color(0xFFFF7A59)],
