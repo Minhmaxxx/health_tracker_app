@@ -5,7 +5,7 @@ import '../data/auth_service.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 import '../utils/validators.dart';
-import '../../home/screens/home_screen.dart';
+import 'auth_wrapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
@@ -143,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (_) => const HomePage()),
+                                    builder: (_) => const AuthWrapper()),
                               );
                             } catch (e) {
                               setState(() => _generalError = e.toString());
