@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:health_tracker_app/goal/set_goal_sheet.dart';
 import '../../auth/presentation/setup_profile_page.dart';
 import '../../../measure/add_measurement_sheet.dart';
 import '../../../measure/weekly_weight_chart.dart';
@@ -206,18 +207,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         FilledButton(
                           style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Color(0xFF5A68FF)),
-                          onPressed: () => showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
                             backgroundColor: Colors.white,
-                            shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(22))),
-                            builder: (_) => const AddMeasurementSheet(),
+                            foregroundColor: Color(0xFF5A68FF),
                           ),
-                          child: const Text('Cập nhật'),
+                          onPressed: () => _showSetGoalSheet(context),
+                          child: Text(hasData ? 'Cập nhật' : 'Bắt Đầu'),
                         ),
                       ],
                     );
@@ -276,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'MỤC TIÊU',
                     subtitle: 'Chưa đặt mục tiêu',
                     onTap: () {
-                      // TODO: Navigator.pushNamed(context, '/goals');
+                      Navigator.pushNamed(context, '/goals');
                     },
                   ),
                   _QuickAction(
@@ -330,6 +324,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showSetGoalSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => const SetGoalSheet(),
     );
   }
 
