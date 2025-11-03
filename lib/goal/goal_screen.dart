@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'goal_model.dart';
 import 'goal_service.dart';
 import '../measure/weekly_weight_chart.dart';

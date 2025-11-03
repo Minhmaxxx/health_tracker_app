@@ -1,8 +1,13 @@
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../widgets/primary_button.dart';
-
 
 class SetupProfilePage extends StatefulWidget {
   const SetupProfilePage({super.key});
@@ -17,6 +22,8 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
   bool _loading = false;
   String? _photoUrl;
   DateTime? _createdAt;
+  final _picker = ImagePicker();
+  bool _uploading = false;
 
   @override
   void initState() {
@@ -90,6 +97,86 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
     }
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      if (kIsWeb) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tính năng chưa hỗ trợ trên web')),
+        );
+        return;
+      }
+
+      final image = await _picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
+      );
+
+      if (image == null) return;
+
+      setState(() => _uploading = true);
+
+      // Upload ảnh lên Firebase Storage
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('avatars')
+          .child('${user.uid}.jpg');
+
+      await ref.putFile(File(image.path));
+      final url = await ref.getDownloadURL();
+
+      // Cập nhật photoURL trong Auth và Firestore
+      await user.updatePhotoURL(url);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'photoUrl': url});
+
+      setState(() {
+        _photoUrl = url;
+        _uploading = false;
+      });
+    } catch (e) {
+      setState(() => _uploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: ${e.toString()}')),
+      );
+    }
+  }
+
+  void _showImagePicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: const Text('Chụp ảnh mới'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Chọn từ thư viện'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAvatarSection() {
     final hasAvatar = _photoUrl != null && _photoUrl!.isNotEmpty;
     final displayName = _nameCtrl.text.trim();
@@ -136,19 +223,21 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      // TODO: Implement image picker
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Tính năng đang phát triển'),
-                        ),
-                      );
-                    },
+                    icon: _uploading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                    onPressed: _uploading ? null : _showImagePicker,
                   ),
                 ),
               ),

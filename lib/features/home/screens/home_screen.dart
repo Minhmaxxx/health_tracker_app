@@ -5,6 +5,9 @@ import 'package:health_tracker_app/goal/set_goal_sheet.dart';
 import '../../auth/presentation/setup_profile_page.dart';
 import '../../../measure/add_measurement_sheet.dart';
 import '../../../measure/weekly_weight_chart.dart';
+import '../helps/goal.dart';
+import '../helps/weight.dart';
+import '../../../notifications_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,10 +20,20 @@ class _HomeScreenState extends State<HomeScreen> {
   String _range = '7 Ngày';
   final _ranges = const ['7 Ngày', '14 Ngày', '30 Ngày'];
   final String displayName = '';
+  DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
+  DateTime _tomorrow(DateTime d) => _startOfDay(d).add(const Duration(days: 1));
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> _latestStream() {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
+  }
+
+  final _notifications = NotificationsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _notifications.initNotifications();
   }
 
   @override
@@ -109,15 +122,121 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Thông báo'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SwitchListTile(
+                                title: const Text('Nhắc nhở cân nặng'),
+                                subtitle: const Text('Mỗi ngày lúc 8:00'),
+                                value: true, // TODO: Lưu trạng thái vào SharedPreferences
+                                onChanged: (value) async {
+                                  if (value) {
+                                    await _notifications.showWeightReminder();
+                                  }
+                                  // TODO: Lưu trạng thái
+                                },
+                              ),
+                              SwitchListTile(
+                                title: const Text('Nhắc nhở uống nước'),
+                                subtitle: const Text('Mỗi 2 tiếng (8:00 - 20:00)'),
+                                value: true,
+                                onChanged: (value) async {
+                                  if (value) {
+                                    await _notifications.scheduleWaterReminders();
+                                  }
+                                },
+                              ),
+                              SwitchListTile(
+                                title: const Text('Nhắc nhở tập thể dục'),
+                                subtitle: const Text('Mỗi ngày lúc 17:00'),
+                                value: true,
+                                onChanged: (value) async {
+                                  if (value) {
+                                    await _notifications.scheduleExerciseReminder();
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                _notifications.cancelAllNotifications();
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Tắt tất cả'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Đóng'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                     icon: const Icon(Icons.notifications_active_rounded),
                   ),
                   IconButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SetupProfilePage()),
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Tùy chọn'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.person),
+                                title: const Text('Thông tin cá nhân'),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => const SetupProfilePage()),
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.logout, color: Colors.red),
+                                title: const Text('Đăng xuất', 
+                                  style: TextStyle(color: Colors.red)),
+                                onTap: () async {
+                                  Navigator.pop(context);
+                                  // Hiện dialog xác nhận
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Xác nhận'),
+                                      content: const Text('Bạn có chắc muốn đăng xuất?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text('Hủy'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          child: const Text('Đăng xuất',
+                                            style: TextStyle(color: Colors.red)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  
+                                  if (confirm == true && mounted) {
+                                    await FirebaseAuth.instance.signOut();
+                                    // AuthWrapper sẽ tự chuyển về màn Login
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                     icon: const Icon(Icons.settings_rounded),
@@ -249,11 +368,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   childAspectRatio: 1.85,
                 ),
                 children: [
-                  _QuickAction(
-                    colors: const [Color(0xFF2FD3C7), Color(0xFF38BDF8)],
-                    icon: Icons.monitor_weight_rounded,
-                    label: 'CÂN NẶNG',
-                    subtitle: 'Cập nhật hôm nay',
+                  // Thay thế nút CÂN NẶNG bằng TodayWeightTile
+                  TodayWeightTile(
                     onTap: () => showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
@@ -264,15 +380,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (_) => const AddMeasurementSheet(),
                     ),
                   ),
-                  _QuickAction(
-                    colors: const [Color(0xFFFF5A8A), Color(0xFFFF7A59)],
-                    icon: Icons.flag_rounded,
-                    label: 'MỤC TIÊU',
-                    subtitle: 'Chưa đặt mục tiêu',
+
+                  // Thay thế nút MỤC TIÊU bằng GoalSummaryTile
+                  GoalSummaryTile(
                     onTap: () {
                       Navigator.pushNamed(context, '/goals');
                     },
                   ),
+
+                  // Giữ nguyên 2 nút còn lại
                   _QuickAction(
                     colors: const [Color(0xFF7C3AED), Color(0xFF5B21B6)],
                     icon: Icons.support_agent_rounded,
