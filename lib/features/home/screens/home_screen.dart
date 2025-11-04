@@ -404,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'LỊCH SỬ',
                     subtitle: 'Xem tất cả lần đo trước',
                     onTap: () {
-                      // TODO: Navigator.pushNamed(context, '/history');
+                      Navigator.pushNamed(context, '/history');
                     },
                   ),
                 ],
