@@ -8,6 +8,7 @@ import '../../../measure/weekly_weight_chart.dart';
 import '../helps/goal.dart';
 import '../helps/weight.dart';
 import '../../../notifications_service.dart';
+import '../../../gemini_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,11 +30,142 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   final _notifications = NotificationsService();
+  final _adviceController = TextEditingController();
+  final _geminiService = GeminiService("AIzaSyBlSdsBW8yo8-CU-hUDyELcAnlYhvjETgs");
+  String _adviceResponse = '';
+
+  void _showAdviceDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          32,
+          24,
+          24 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Tư vấn sức khỏe',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _adviceController,
+              decoration: const InputDecoration(
+                hintText: 'Nhập câu hỏi của bạn...',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              minLines: 1,
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () async {
+                final question = _adviceController.text.trim();
+                if (question.isEmpty) return;
+
+                // Get latest user data
+                final userDoc = await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser?.uid)
+                    .get();
+                
+                final latest = userDoc.data()?['latest'] as Map<String, dynamic>?;
+                
+                final profile = {
+                  "weight": latest?['weight'] ?? 0,
+                  "height": latest?['height'] ?? 0,
+                  "activity": "vừa phải",
+                };
+
+                Navigator.pop(context); // Close input sheet
+
+                // Show response in new sheet
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                  ),
+                  builder: (context) => StatefulBuilder(
+                    builder: (context, setState) => Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Lời khuyên',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_adviceResponse.isEmpty)
+                            const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                          else
+                            Flexible(
+                              child: SingleChildScrollView(
+                                child: Text(_adviceResponse),
+                              ),
+                            ),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Đóng'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+
+                // Get advice
+                final response = await _geminiService.advise(
+                  profile,
+                  question, 
+                );
+                setState(() => _adviceResponse = response);
+              },
+              child: const Text('Nhận tư vấn'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
     _notifications.initNotifications();
+  }
+
+  @override
+  void dispose() {
+    _adviceController.dispose();
+    super.dispose();
   }
 
   @override
@@ -394,9 +526,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.support_agent_rounded,
                     label: 'TƯ VẤN',
                     subtitle: 'Hỏi về dinh dưỡng, luyện tập',
-                    onTap: () {
-                      // TODO: Navigator.pushNamed(context, '/coach');
-                    },
+                    onTap: _showAdviceDialog,
                   ),
                   _QuickAction(
                     colors: const [Color(0xFFFFA000), Color(0xFFFF6F00)],

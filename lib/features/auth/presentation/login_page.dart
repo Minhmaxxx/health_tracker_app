@@ -63,10 +63,12 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 55),
                   const Text("Health Tracker",
                       style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black,
+                        letterSpacing: 1.5,
                       )),
+
                   const SizedBox(height: 32),
 
                   // Email input + error
@@ -89,18 +91,18 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   if (_passError != null) ...[
                     const SizedBox(height: 6),
-                    Text(
-                      _passError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    const Text(
+                      "Tài khoản hoặc mật khẩu sai",
+                      style: TextStyle(color: Colors.red, fontSize: 12),
                     ),
                   ],
                   const SizedBox(height: 24),
 
                   // General error
                   if (_generalError != null) ...[
-                    Text(
-                      _generalError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    const Text(
+                      "Tài khoản hoặc mật khẩu sai",
+                      style: TextStyle(color: Colors.red, fontSize: 12),
                     ),
                     const SizedBox(height: 12),
                   ],

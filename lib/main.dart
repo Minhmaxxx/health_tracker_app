@@ -8,10 +8,12 @@ import 'firebase_options.dart';
 import 'goal/goal_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart'; 
+import 'package:intl/date_symbol_data_local.dart';
+import 'features/home/screens/home_screen.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   // Khởi tạo dữ liệu định dạng cho tiếng Việt
   Intl.defaultLocale = 'vi';
   await initializeDateFormatting('vi');
@@ -25,8 +27,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Thêm persistence với thời gian 4 ngày
-  await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+  // Auto logout after 4 days
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
     if (user != null) {
       final metadata = user.metadata;
@@ -53,7 +54,24 @@ class MyApp extends StatelessWidget {
       title: 'Health Tracker',
       theme: ThemeData(primarySwatch: Colors.green),
       debugShowCheckedModeBanner: false,
-      home: const LoginPage(),
+      
+      // Replace home with StreamBuilder
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          } else if (snapshot.hasData) {
+            return const HomeScreen(); // Đã đăng nhập
+          } else {
+            return const LoginPage(); // Chưa đăng nhập
+          }
+        },
+      ),
       
       // Thêm cấu hình localization
       localizationsDelegates: const [
