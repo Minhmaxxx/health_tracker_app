@@ -16,7 +16,7 @@ Features
 - Smart search bar with debounce
 - Modern UI / Dark–Light theme ready
 - Firebase Auth & Firestore Integration (optional)
-
+- AI ChatBot advice (Gemini API)
 App Screenshots
 
 | Login | Home | Profile |
