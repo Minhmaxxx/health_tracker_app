@@ -44,6 +44,12 @@ dependencies:
   flutter_local_notifications: ^19.5.0
   intl: ^0.19.0
   http: ^1.2.2
+  google_generative_ai: ^0.2.2
+  flutter_dotenv: ^5.1.0  # giấu API key
+  flutter_riverpod: ^2.4.9
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  provider: ^6.1.1 
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +73,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets: 
+    - .env
     - assets/images/background_auth.png
   # To add assets to your application, add an assets section, like this:
   # assets:

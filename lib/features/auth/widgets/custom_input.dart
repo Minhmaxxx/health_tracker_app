@@ -11,7 +11,7 @@ class CustomInput extends StatefulWidget {
     required this.label,
     required this.controller,
     this.obscure = false,
-    this.isPassword = false,
+    this.isPassword = false, required TextInputType keyboardType, required String? Function(dynamic v) validator,
   });
 
   @override

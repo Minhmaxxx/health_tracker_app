@@ -2,13 +2,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:health_tracker_app/goal/set_goal_sheet.dart';
+import 'package:provider/provider.dart';
 import '../../auth/presentation/setup_profile_page.dart';
 import '../../../measure/add_measurement_sheet.dart';
 import '../../../measure/weekly_weight_chart.dart';
 import '../helps/goal.dart';
 import '../helps/weight.dart';
 import '../../../notifications_service.dart';
-import '../../../gemini_service.dart';
+import '../../ai_chatbot/providers/chatbot_provider.dart';
+import 'chatbot_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,131 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   final _notifications = NotificationsService();
-  final _adviceController = TextEditingController();
-  final _geminiService = GeminiService("AIzaSyBlSdsBW8yo8-CU-hUDyELcAnlYhvjETgs");
-  String _adviceResponse = '';
-
-  void _showAdviceDialog() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          24,
-          32,
-          24,
-          24 + MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Tư vấn sức khỏe',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _adviceController,
-              decoration: const InputDecoration(
-                hintText: 'Nhập câu hỏi của bạn...',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              minLines: 1,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () async {
-                final question = _adviceController.text.trim();
-                if (question.isEmpty) return;
-
-                // Get latest user data
-                final userDoc = await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(FirebaseAuth.instance.currentUser?.uid)
-                    .get();
-                
-                final latest = userDoc.data()?['latest'] as Map<String, dynamic>?;
-                
-                final profile = {
-                  "weight": latest?['weight'] ?? 0,
-                  "height": latest?['height'] ?? 0,
-                  "activity": "vừa phải",
-                };
-
-                Navigator.pop(context); // Close input sheet
-
-                // Show response in new sheet
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                  ),
-                  builder: (context) => StatefulBuilder(
-                    builder: (context, setState) => Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text(
-                            'Lời khuyên',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          if (_adviceResponse.isEmpty)
-                            const Center(
-                              child: CircularProgressIndicator(),
-                            )
-                          else
-                            Flexible(
-                              child: SingleChildScrollView(
-                                child: Text(_adviceResponse),
-                              ),
-                            ),
-                          const SizedBox(height: 16),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Đóng'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-
-                // Get advice
-                final response = await _geminiService.advise(
-                  profile,
-                  question, 
-                );
-                setState(() => _adviceResponse = response);
-              },
-              child: const Text('Nhận tư vấn'),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   void initState() {
@@ -164,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _adviceController.dispose();
     super.dispose();
   }
 
@@ -265,7 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               SwitchListTile(
                                 title: const Text('Nhắc nhở cân nặng'),
                                 subtitle: const Text('Mỗi ngày lúc 8:00'),
-                                value: true, // TODO: Lưu trạng thái vào SharedPreferences
+                                value:
+                                    true, // TODO: Lưu trạng thái vào SharedPreferences
                                 onChanged: (value) async {
                                   if (value) {
                                     await _notifications.showWeightReminder();
@@ -275,11 +152,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               SwitchListTile(
                                 title: const Text('Nhắc nhở uống nước'),
-                                subtitle: const Text('Mỗi 2 tiếng (8:00 - 20:00)'),
+                                subtitle:
+                                    const Text('Mỗi 2 tiếng (8:00 - 20:00)'),
                                 value: true,
                                 onChanged: (value) async {
                                   if (value) {
-                                    await _notifications.scheduleWaterReminders();
+                                    await _notifications
+                                        .scheduleWaterReminders();
                                   }
                                 },
                               ),
@@ -289,7 +168,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 value: true,
                                 onChanged: (value) async {
                                   if (value) {
-                                    await _notifications.scheduleExerciseReminder();
+                                    await _notifications
+                                        .scheduleExerciseReminder();
                                   }
                                 },
                               ),
@@ -330,14 +210,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) => const SetupProfilePage()),
+                                        builder: (_) =>
+                                            const SetupProfilePage()),
                                   );
                                 },
                               ),
                               ListTile(
-                                leading: const Icon(Icons.logout, color: Colors.red),
-                                title: const Text('Đăng xuất', 
-                                  style: TextStyle(color: Colors.red)),
+                                leading:
+                                    const Icon(Icons.logout, color: Colors.red),
+                                title: const Text('Đăng xuất',
+                                    style: TextStyle(color: Colors.red)),
                                 onTap: () async {
                                   Navigator.pop(context);
                                   // Hiện dialog xác nhận
@@ -345,21 +227,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                     context: context,
                                     builder: (context) => AlertDialog(
                                       title: const Text('Xác nhận'),
-                                      content: const Text('Bạn có chắc muốn đăng xuất?'),
+                                      content: const Text(
+                                          'Bạn có chắc muốn đăng xuất?'),
                                       actions: [
                                         TextButton(
-                                          onPressed: () => Navigator.pop(context, false),
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
                                           child: const Text('Hủy'),
                                         ),
                                         TextButton(
-                                          onPressed: () => Navigator.pop(context, true),
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
                                           child: const Text('Đăng xuất',
-                                            style: TextStyle(color: Colors.red)),
+                                              style:
+                                                  TextStyle(color: Colors.red)),
                                         ),
                                       ],
                                     ),
                                   );
-                                  
+
                                   if (confirm == true && mounted) {
                                     await FirebaseAuth.instance.signOut();
                                     // AuthWrapper sẽ tự chuyển về màn Login
@@ -520,14 +406,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
 
-                  // Giữ nguyên 2 nút còn lại
+                  // ✅ TƯ VẤN - Dẫn tới ChatbotScreen
                   _QuickAction(
                     colors: const [Color(0xFF7C3AED), Color(0xFF5B21B6)],
                     icon: Icons.support_agent_rounded,
                     label: 'TƯ VẤN',
                     subtitle: 'Hỏi về dinh dưỡng, luyện tập',
-                    onTap: _showAdviceDialog,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChangeNotifierProvider(
+                            create: (_) => ChatbotProvider(),
+                            child: const ChatbotScreen(),
+                          ),
+                        ),
+                      );
+                    },
                   ),
+
                   _QuickAction(
                     colors: const [Color(0xFFFFA000), Color(0xFFFF6F00)],
                     icon: Icons.receipt_long_rounded,

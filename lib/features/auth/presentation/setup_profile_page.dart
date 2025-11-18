@@ -260,6 +260,56 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
     );
   }
 
+  Future<void> _updateAvatar() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    try {
+      setState(() => _loading = true);
+
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception('User not found');
+
+      // Delete old avatar if exists
+      try {
+        await FirebaseStorage.instance.ref('users/$userId/avatar.jpg').delete();
+      } catch (e) {
+        // Ignore if old file doesn't exist
+      }
+
+      // Upload new avatar
+      final ref = FirebaseStorage.instance.ref('users/$userId/avatar.jpg');
+      await ref.putFile(File(image.path));
+
+      // Get download URL
+      final url = await ref.getDownloadURL();
+
+      // Update user profile
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update({'avatar': url});
+
+      setState(() => _photoUrl = url);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cập nhật ảnh đại diện thành công')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

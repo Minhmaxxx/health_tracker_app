@@ -9,11 +9,14 @@ import 'goal/goal_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'features/home/screens/home_screen.dart'; 
+import 'features/home/screens/home_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  await dotenv.load(fileName: ".env");
+
   // Khởi tạo dữ liệu định dạng cho tiếng Việt
   Intl.defaultLocale = 'vi';
   await initializeDateFormatting('vi');
@@ -21,7 +24,7 @@ void main() async {
   // Khởi tạo notifications
   final notificationsService = NotificationsService();
   await notificationsService.initNotifications();
-  
+
   // Khởi tạo Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -47,14 +50,14 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Health Tracker',
       theme: ThemeData(primarySwatch: Colors.green),
       debugShowCheckedModeBanner: false,
-      
+
       // Replace home with StreamBuilder
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
@@ -72,7 +75,7 @@ class MyApp extends StatelessWidget {
           }
         },
       ),
-      
+
       // Thêm cấu hình localization
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -84,11 +87,12 @@ class MyApp extends StatelessWidget {
         Locale('en'),
       ],
       locale: const Locale('vi'),
-      
+
       // Routes hiện tại
       routes: {
         '/goals': (context) => const GoalScreen(),
         '/history': (_) => const WeightHistoryScreen(),
+        '/home': (context) => const HomeScreen(),
       },
     );
   }
