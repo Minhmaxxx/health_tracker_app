@@ -19,10 +19,6 @@ Features
 - AI ChatBot advice (Gemini API)
   
 App Screenshots
-<img width="480" height="1067" alt="image" src="https://github.com/user-attachments/assets/57fc564e-f306-4c28-8b1d-a7bf56968899" />
-<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/992d99e2-e174-4245-abe0-0375b0a1557b" />
-
-
 
 | Login | Home | Profile |
 |:------:|:------:|:------:|
