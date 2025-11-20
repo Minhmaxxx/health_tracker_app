@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_input.dart';
-import '../widgets/primary_button.dart';
 import '../data/auth_service.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 import '../utils/validators.dart';
-import 'setup_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {

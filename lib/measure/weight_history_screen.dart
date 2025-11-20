@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'weight_service.dart';
+import 'dart:async';
 
 enum _Range { all, d7, d30, y1 }
 
@@ -27,10 +28,14 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
   DateTime? _fromDate() {
     final now = DateTime.now();
     switch (_range) {
-      case _Range.d7:  return now.subtract(const Duration(days: 7));
-      case _Range.d30: return now.subtract(const Duration(days: 30));
-      case _Range.y1:  return DateTime(now.year - 1, now.month, now.day);
-      case _Range.all: return null;
+      case _Range.d7:
+        return now.subtract(const Duration(days: 7));
+      case _Range.d30:
+        return now.subtract(const Duration(days: 30));
+      case _Range.y1:
+        return DateTime(now.year - 1, now.month, now.day);
+      case _Range.all:
+        return null;
     }
   }
 
@@ -79,8 +84,10 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
           if (entries.isEmpty) {
             return _EmptyHistory(
               onGoHome: () => Navigator.pop(context),
-              searchField: _SearchBar(ctrl: _searchCtrl, onChanged: (_) => setState(() {})),
-              rangeBar: _RangeBar(range: _range, onChanged: (r) => setState(() => _range = r)),
+              searchField: _SearchBar(
+                  ctrl: _searchCtrl, onChanged: (_) => setState(() {})),
+              rangeBar: _RangeBar(
+                  range: _range, onChanged: (r) => setState(() => _range = r)),
             );
           }
 
@@ -88,7 +95,8 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
           final weights = entries.map((e) => e.weight).toList()..sort();
           final minW = weights.first;
           final maxW = weights.last;
-          final change = entries.last.weight - entries.first.weight; // theo thứ tự hiện tại
+          final change = entries.last.weight -
+              entries.first.weight; // theo thứ tự hiện tại
 
           // Group theo ngày
           final Map<DateTime, List<WeightEntry>> byDay = {};
@@ -106,22 +114,24 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
               const SizedBox(height: 12),
               _StatsRow(
                 total: entries.length,
-                changeText: '${change >= 0 ? '+' : ''}${change.toStringAsFixed(1)}kg',
+                changeText:
+                    '${change >= 0 ? '+' : ''}${change.toStringAsFixed(1)}kg',
                 minWeight: minW,
                 maxWeight: maxW,
               ),
               const SizedBox(height: 12),
-              _RangeBar(range: _range, onChanged: (r) => setState(() => _range = r)),
+              _RangeBar(
+                  range: _range, onChanged: (r) => setState(() => _range = r)),
               const SizedBox(height: 6),
               Text('Hiển thị ${entries.length} lần đo',
                   style: const TextStyle(color: Colors.black54)),
               const SizedBox(height: 8),
-
               for (final day in days) ...[
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(.04),
                         borderRadius: BorderRadius.circular(8),
@@ -135,7 +145,6 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-
                 for (int i = 0; i < byDay[day]!.length; i++) ...[
                   _EntryTile(
                     index: _desc ? i + 1 : byDay[day]!.length - i,
@@ -146,7 +155,6 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                   ),
                   const SizedBox(height: 10),
                 ],
-
                 const SizedBox(height: 12),
               ],
             ],
@@ -164,12 +172,18 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(leading: const Icon(Icons.edit_rounded), title: const Text('Sửa ghi chú'), onTap: () {
-              Navigator.pop(context, 'edit');
-            }),
-            ListTile(leading: const Icon(Icons.delete_outline_rounded), title: const Text('Xoá lần đo này'), onTap: () {
-              Navigator.pop(context, 'delete');
-            }),
+            ListTile(
+                leading: const Icon(Icons.edit_rounded),
+                title: const Text('Sửa ghi chú'),
+                onTap: () {
+                  Navigator.pop(context, 'edit');
+                }),
+            ListTile(
+                leading: const Icon(Icons.delete_outline_rounded),
+                title: const Text('Xoá lần đo này'),
+                onTap: () {
+                  Navigator.pop(context, 'delete');
+                }),
             const SizedBox(height: 8),
           ],
         ),
@@ -179,8 +193,10 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
     if (!mounted || action == null) return;
 
     final doc = FirebaseFirestore.instance
-        .collection('weights').doc(_svc.uid) 
-        .collection('entries').doc(e.id);
+        .collection('weights')
+        .doc(_svc.uid)
+        .collection('entries')
+        .doc(e.id);
 
     if (action == 'delete') {
       await doc.delete();
@@ -190,10 +206,17 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Sửa ghi chú'),
-          content: TextField(controller: controller, maxLines: 3, decoration: const InputDecoration(hintText: 'Ghi chú...')),
+          content: TextField(
+              controller: controller,
+              maxLines: 3,
+              decoration: const InputDecoration(hintText: 'Ghi chú...')),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
-            FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Lưu')),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, controller.text.trim()),
+                child: const Text('Lưu')),
           ],
         ),
       );
@@ -206,16 +229,35 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
 
 /// Widgets phụ
 
-class _SearchBar extends StatelessWidget {
+class _SearchBar extends StatefulWidget {
   final TextEditingController ctrl;
   final ValueChanged<String> onChanged;
   const _SearchBar({required this.ctrl, required this.onChanged});
 
   @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _submitSearch() {
+    widget.onChanged(widget.ctrl.text.trim());
+  }
+
+  @override
   Widget build(BuildContext context) {
     return TextField(
-      controller: ctrl,
-      onChanged: onChanged,
+      controller: widget.ctrl,
+      focusNode: _focusNode,
+      textInputAction: TextInputAction.search,
+      onSubmitted: (_) => _submitSearch(), // chỉ cập nhật khi nhấn Enter
       decoration: InputDecoration(
         prefixIcon: const Icon(Icons.search_rounded),
         hintText: 'Tìm kiếm theo cân nặng, ghi chú, ngày...',
@@ -226,6 +268,10 @@ class _SearchBar extends StatelessWidget {
           borderSide: BorderSide.none,
         ),
         isDense: true,
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.check_rounded),
+          onPressed: _submitSearch, // hoặc nhấn nút check để tìm
+        ),
       ),
     );
   }
@@ -252,13 +298,17 @@ class _StatsRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg ?? Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 8)],
+            boxShadow: const [
+              BoxShadow(color: Color(0x11000000), blurRadius: 8)
+            ],
           ),
           child: Column(
             children: [
               Text(title, style: const TextStyle(color: Colors.black54)),
               const SizedBox(height: 6),
-              Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(value,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800)),
             ],
           ),
         ),
@@ -285,18 +335,31 @@ class _RangeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Chip chip(String text, _Range r) => Chip(
-      label: Text(text),
-      backgroundColor: range == r ? const Color(0xFFEDE8FF) : const Color(0xFFF6F7FB),
-      side: BorderSide.none,
-    );
+          label: Text(text),
+          backgroundColor:
+              range == r ? const Color(0xFFEDE8FF) : const Color(0xFFF6F7FB),
+          side: BorderSide.none,
+        );
 
     return Wrap(
       spacing: 8,
       children: [
-        ChoiceChip(label: const Text('Tất cả'), selected: range == _Range.all, onSelected: (_) => onChanged(_Range.all)),
-        ChoiceChip(label: const Text('7 ngày'), selected: range == _Range.d7, onSelected: (_) => onChanged(_Range.d7)),
-        ChoiceChip(label: const Text('30 ngày'), selected: range == _Range.d30, onSelected: (_) => onChanged(_Range.d30)),
-        ChoiceChip(label: const Text('1 năm'), selected: range == _Range.y1, onSelected: (_) => onChanged(_Range.y1)),
+        ChoiceChip(
+            label: const Text('Tất cả'),
+            selected: range == _Range.all,
+            onSelected: (_) => onChanged(_Range.all)),
+        ChoiceChip(
+            label: const Text('7 ngày'),
+            selected: range == _Range.d7,
+            onSelected: (_) => onChanged(_Range.d7)),
+        ChoiceChip(
+            label: const Text('30 ngày'),
+            selected: range == _Range.d30,
+            onSelected: (_) => onChanged(_Range.d30)),
+        ChoiceChip(
+            label: const Text('1 năm'),
+            selected: range == _Range.y1,
+            onSelected: (_) => onChanged(_Range.y1)),
       ],
     );
   }
@@ -322,7 +385,8 @@ class _EntryTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white, borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 6)],
       ),
       child: Row(
@@ -333,7 +397,9 @@ class _EntryTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('$weight kg', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                Text('$weight kg',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 16)),
                 if ((note ?? '').isNotEmpty)
                   Text(note!, style: const TextStyle(color: Colors.black54)),
               ],
@@ -341,7 +407,8 @@ class _EntryTile extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(time, style: const TextStyle(color: Colors.black54)),
-          IconButton(icon: const Icon(Icons.more_vert_rounded), onPressed: onMore),
+          IconButton(
+              icon: const Icon(Icons.more_vert_rounded), onPressed: onMore),
         ],
       ),
     );
@@ -352,7 +419,10 @@ class _EmptyHistory extends StatelessWidget {
   final VoidCallback onGoHome;
   final Widget searchField;
   final Widget rangeBar;
-  const _EmptyHistory({required this.onGoHome, required this.searchField, required this.rangeBar});
+  const _EmptyHistory(
+      {required this.onGoHome,
+      required this.searchField,
+      required this.rangeBar});
 
   @override
   Widget build(BuildContext context) {
@@ -366,19 +436,26 @@ class _EmptyHistory extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(16),
-            boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 8)],
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(color: Color(0x11000000), blurRadius: 8)
+            ],
           ),
           child: Column(
             children: [
-              const Icon(Icons.bar_chart_rounded, size: 56, color: Colors.black26),
+              const Icon(Icons.bar_chart_rounded,
+                  size: 56, color: Colors.black26),
               const SizedBox(height: 8),
-              const Text('Chưa Có Lịch Sử', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              const Text('Chưa Có Lịch Sử',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
               const SizedBox(height: 4),
               const Text('Bắt đầu thêm cân nặng để theo dõi tiến độ của bạn',
-                  textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.black54)),
               const SizedBox(height: 12),
-              FilledButton(onPressed: onGoHome, child: const Text('Về Trang Chủ')),
+              FilledButton(
+                  onPressed: onGoHome, child: const Text('Về Trang Chủ')),
             ],
           ),
         ),
